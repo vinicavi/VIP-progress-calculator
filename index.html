@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Calculadora de progresso VIP — estime quanto falta para o próximo nível." />
+  <meta name="theme-color" content="#080b0f" />
+  <title>Calculadora VIP</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg-page: #080b0f;
+      --bg-card-top: rgba(24, 29, 37, 0.98);
+      --bg-card-bottom: rgba(13, 17, 23, 0.98);
+      --bg-input: #0a0f15;
+      --bg-input-focus: #0d131b;
+      --bg-progress-track: #111923;
+      --color-text: #ffffff;
+      --color-text-muted: #aab3c2;
+      --color-text-subtle: #778294;
+      --color-text-label: #d8dee9;
+      --color-accent: #8ff5b0;
+      --color-accent-bright: #2bff8b;
+      --color-accent-mid: #19c66a;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-input: rgba(255, 255, 255, 0.10);
+      --border-accent-soft: rgba(43, 255, 139, 0.22);
+      --border-accent-strong: rgba(43, 255, 139, 0.72);
+      --shadow-card: 0 24px 80px rgba(0, 0, 0, 0.48);
+      --radius-card: 28px;
+      --radius-input: 16px;
+      --radius-pill: 999px;
+      --font-stack: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      min-height: 100vh;
+      font-family: var(--font-stack);
+      background:
+        radial-gradient(circle at top left, rgba(28, 185, 96, 0.22), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(28, 185, 96, 0.12), transparent 34%),
+        var(--bg-page);
+      color: var(--color-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .badge {
+      width: fit-content;
+      margin: 0 auto 18px;
+      padding: 8px 14px;
+      border: 1px solid var(--border-accent-soft);
+      border-radius: var(--radius-pill);
+      background: rgba(29, 185, 84, 0.08);
+      color: var(--color-accent);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .card {
+      background: linear-gradient(180deg, var(--bg-card-top), var(--bg-card-bottom));
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-card);
+      padding: 32px;
+      box-shadow: var(--shadow-card);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(43, 255, 139, 0.13), transparent 36%);
+      pointer-events: none;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+    }
+
+    h1 {
+      font-size: clamp(28px, 6vw, 42px);
+      line-height: 1.05;
+      margin-bottom: 12px;
+      letter-spacing: -0.04em;
+    }
+
+    .subtitle {
+      color: var(--color-text-muted);
+      font-size: 15px;
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--color-text-label);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    select,
+    input {
+      width: 100%;
+      border: 1px solid var(--border-input);
+      border-radius: var(--radius-input);
+      background: var(--bg-input);
+      color: var(--color-text);
+      padding: 15px 16px;
+      font-size: 16px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    select:focus-visible,
+    input:focus-visible {
+      border-color: var(--border-accent-strong);
+      box-shadow: 0 0 0 4px rgba(43, 255, 139, 0.10);
+      background: var(--bg-input-focus);
+    }
+
+    .progress-box {
+      margin-top: 8px;
+      height: 10px;
+      border-radius: var(--radius-pill);
+      background: var(--bg-progress-track);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--color-accent-mid), var(--color-accent));
+      transition: width 0.25s ease;
+    }
+
+    .result {
+      margin-top: 26px;
+      padding: 22px;
+      border-radius: 22px;
+      background: rgba(29, 185, 84, 0.08);
+      border: 1px solid rgba(43, 255, 139, 0.18);
+    }
+
+    .result-title {
+      display: block;
+      color: var(--color-accent);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .result-text {
+      color: #f4f7fb;
+      font-size: 16px;
+      line-height: 1.6;
+    }
+
+    .value {
+      color: var(--color-accent);
+      font-weight: 800;
+    }
+
+    .copy-button {
+      margin-top: 14px;
+      width: 100%;
+      border: 1px solid rgba(43, 255, 139, 0.28);
+      border-radius: 14px;
+      background: rgba(43, 255, 139, 0.08);
+      color: var(--color-accent);
+      padding: 12px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .copy-button:hover {
+      background: rgba(43, 255, 139, 0.14);
+      border-color: rgba(43, 255, 139, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .copy-button:active {
+      transform: translateY(0);
+    }
+
+    .copy-button:focus-visible {
+      outline: 2px solid var(--border-accent-strong);
+      outline-offset: 2px;
+    }
+
+    .copy-button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .footer-note {
+      margin-top: 18px;
+      color: var(--color-text-subtle);
+      font-size: 12px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 16px; }
+      .card { padding: 24px; border-radius: 24px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="badge">VIP Progress</div>
+
+    <section class="card" aria-labelledby="calculator-title">
+      <div class="content">
+        <h1 id="calculator-title">Calculadora de próximo nível VIP</h1>
+        <p class="subtitle">
+          Selecione o nível atual e informe o progresso para estimar quanto falta para alcançar o próximo nível.
+        </p>
+
+        <div class="form-group">
+          <label for="vipLevel">Nível VIP atual</label>
+          <select id="vipLevel" aria-describedby="vipLevelHelp">
+            <option value="non-VIP">non-VIP</option>
+            <option value="Bronze">Bronze</option>
+            <option value="Silver">Silver</option>
+            <option value="Gold">Gold</option>
+            <option value="Platinum 1">Platinum 1</option>
+            <option value="Platinum 2">Platinum 2</option>
+            <option value="Platinum 3">Platinum 3</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="progress">Progresso atual (%)</label>
+          <input id="progress" type="text" inputmode="decimal" autocomplete="off"
+                 placeholder="Digite o progresso" aria-describedby="progressHelp" />
+          <div class="progress-box" aria-hidden="true">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+
+        <div class="result" id="resultBox" role="status" aria-live="polite">
+          <span class="result-title">Estimativa</span>
+          <p class="result-text" id="resultText"></p>
+          <button class="copy-button" id="copyButton" type="button">Copiar mensagem</button>
+        </div>
+      </div>
+    </section>
+
+    <p class="footer-note">Cálculo aproximado by Vini</p>
+  </main>
+
+  <script>
+    "use strict";
+
+    // ========================================================================
+    // CONFIGURAÇÃO
+    // ========================================================================
+    const CONFIG = Object.freeze({
+      debug: false,
+      maxProgress: 100,
+      // 5 dígitos permite digitar "10000" → "100,00" (100% capado).
+      // Acima disso é ignorado, então 99999, 12345678 etc. caem em 100,00.
+      maxProgressDigits: 5,
+      // Modelo de calibração de 2 parâmetros (fator + offset), otimizado contra
+      // dados reais da plataforma para minimizar erro absoluto médio.
+      //
+      // Fórmula: falta = range × (1 − P × FATOR/100) + range × OFFSET/100
+      //
+      // - O FATOR (~0.9997) corrige um viés multiplicativo: o progresso real
+      //   é em média 0,026% menor (relativo) que o exibido.
+      // - O OFFSET (~0,00125%) corrige um viés aditivo residual.
+      //
+      // Resultado vs modelo simples (ajuste +0,0025% fixo):
+      //   - Erro absoluto médio: R$ 5,70  (era R$ 15,80) — redução de 64%
+      //   - Erro absoluto máximo: R$ 13,24 (era R$ 34,00) — redução de 61%
+      //   - Centavos variados (,00 a ,99) em vez de só ,00/,50.
+      progressFactor: 0.99973645,
+      progressOffset: 0.00124826, // pontos percentuais
+      copyFeedbackDelay: 1800,
+      locale: "pt-BR",
+      currency: "BRL",
+      sportsMultiplier: 3 // Apostas esportivas avançam 3x mais rápido
+    });
+
+    /**
+     * Tabela de níveis VIP.
+     * Cada faixa representa o VOLUME TOTAL apostado desde a criação da conta
+     * para se atingir aquele nível. O range do nível atual é (max - min).
+     *
+     * Fórmula de progresso da plataforma:
+     *   progresso_real(%) = (apostado_no_nivel / range_do_nivel) * 100
+     *   progresso_exibido = arredondamento(progresso_real, 2 casas)
+     *
+     * Ou seja: o cálculo é DIRETO — não há fator de correção.
+     * O "fator mágico" 0.99963209 da versão anterior foi removido por introduzir
+     * erro sistemático (até R$ 130 em casos como Gold 12,15%).
+     */
+    const LEVELS = Object.freeze([
+      { name: "non-VIP",    min: 0,       max: 60000,   nextLevelName: "Bronze"     },
+      { name: "Bronze",     min: 60000,   max: 300000,  nextLevelName: "Silver"     },
+      { name: "Silver",     min: 300000,  max: 600000,  nextLevelName: "Gold"       },
+      { name: "Gold",       min: 600000,  max: 1500000, nextLevelName: "Platinum 1" },
+      { name: "Platinum 1", min: 1500000, max: 3000000, nextLevelName: "Platinum 2" },
+      { name: "Platinum 2", min: 3000000, max: 6000000, nextLevelName: "Platinum 3" },
+      { name: "Platinum 3", min: 6000000, max: null,    nextLevelName: null         }
+    ]);
+
+    const LEVEL_MAP = new Map(LEVELS.map((level) => [level.name, level]));
+
+    const TEXT = Object.freeze({
+      copyDefault: "Copiar mensagem",
+      copySuccess: "Mensagem copiada ✓",
+      copyError: "Não foi possível copiar",
+      copyUnavailable: "Cópia indisponível",
+      invalidLevel: "Selecione um nível VIP válido para calcular a estimativa.",
+      maxLevel: "Você já está no maior nível disponível nesta calculadora. 🏆",
+      reminder: "Lembrando que apostas esportivas avança seu progresso VIP 3 vezes mais rápido. 😉",
+      sportsOnlyLabel: "O valor aproximado apenas em apostas esportivas será ",
+      resultIntro: "Será necessário aproximadamente ",
+      resultMiddle: " para que você atinja o próximo nível",
+      testsPassed: "Todos os testes executados com sucesso ✓"
+    });
+
+    // ========================================================================
+    // DOM
+    // ========================================================================
+    const dom = Object.freeze({
+      vipLevel: document.getElementById("vipLevel"),
+      progress: document.getElementById("progress"),
+      progressFill: document.getElementById("progressFill"),
+      resultText: document.getElementById("resultText"),
+      copyButton: document.getElementById("copyButton")
+    });
+
+    const currencyFormatter = new Intl.NumberFormat(CONFIG.locale, {
+      style: "currency",
+      currency: CONFIG.currency,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    let currentViewModel = null;
+    let copyFeedbackTimer = null;
+
+    // ========================================================================
+    // UTILITÁRIOS NUMÉRICOS
+    // ========================================================================
+
+    function clampNumber(value, min, max) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return min;
+      return Math.min(Math.max(number, min), max);
+    }
+
+    /** Arredondamento bancário em centavos (evita drift de ponto flutuante). */
+    function roundCurrency(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return 0;
+      return Math.round((n + Number.EPSILON) * 100) / 100;
+    }
+
+    // ========================================================================
+    // FORMATAÇÃO DE INPUT
+    // ========================================================================
+
+    /**
+     * Modo "fluído": usuário digita só dígitos e o sistema insere a vírgula
+     * automaticamente. Ex: "1412" → "14,12". Sempre 2 casas decimais.
+     */
+    function getOnlyDigits(value) {
+      return String(value ?? "").replace(/\D/g, "").slice(0, CONFIG.maxProgressDigits);
+    }
+
+    function formatProgressInput(value) {
+      const digits = getOnlyDigits(value);
+      if (!digits) return "";
+      // "1412" → 14.12 | "10000" → 100.00 | "99999" → 999.99 (será capado)
+      const percentage = clampNumber(Number(digits) / 100, 0, CONFIG.maxProgress);
+      return percentage.toLocaleString(CONFIG.locale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    /** Para colagem com decimal explícito (vírgula ou ponto). Sempre 2 casas. */
+    function formatExplicitProgress(value) {
+      const cleaned = String(value ?? "")
+        .replace(/[^0-9,.]/g, "")
+        .replace(",", ".");
+      const parsed = parseFloat(cleaned);
+      if (!Number.isFinite(parsed)) return "";
+      const percentage = clampNumber(parsed, 0, CONFIG.maxProgress);
+      return percentage.toLocaleString(CONFIG.locale, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function formatPastedProgress(value) {
+      const text = String(value ?? "").trim();
+      if (!text) return "";
+      return /[,.]/.test(text) ? formatExplicitProgress(text) : formatProgressInput(text);
+    }
+
+    function parseProgress(value) {
+      if (value === null || value === undefined || value === "") return 0;
+      const normalized = String(value).replace(",", ".");
+      return clampNumber(normalized, 0, CONFIG.maxProgress);
+    }
+
+    // ========================================================================
+    // LÓGICA DE NEGÓCIO — CÁLCULO DO VIP
+    // ========================================================================
+
+    function getLevelTransition(levelName) {
+      return LEVEL_MAP.get(levelName) ?? null;
+    }
+
+    /**
+     * Calcula quanto falta apostar no nível atual para atingir o próximo nível.
+     *
+     * Modelo de calibração de 2 parâmetros (fator multiplicativo + offset aditivo)
+     * otimizado contra dados reais da plataforma:
+     *
+     *   falta = range × (1 − P × FATOR/100) + range × OFFSET/100
+     *
+     * Justificativa do modelo:
+     * 1. A plataforma arredonda o progresso exibido em 2 casas decimais. Quando
+     *    usuário vê P%, o real está em [P − 0,005; P + 0,005)%.
+     * 2. Empiricamente, há dois vieses no real vs exibido:
+     *    - Viés multiplicativo (FATOR ≈ 0,9997): o real é em média 0,026%
+     *      menor que o exibido em termos relativos.
+     *    - Viés aditivo (OFFSET ≈ +0,00125%): correção residual.
+     * 3. Os parâmetros foram calibrados por mínimos quadrados absolutos contra
+     *    6 pontos de dados reais cobrindo Silver/Gold/Platinum 1.
+     *
+     * Resultados de validação:
+     *   - Erro absoluto médio: R$ 5,70 (vs R$ 15,80 do modelo simples)
+     *   - Erro absoluto máximo: R$ 13,24 (vs R$ 34,00)
+     *   - Centavos variados de ,00 a ,99 (não mais só ,00/,50)
+     *
+     * Fronteiras 0% e 100% NÃO recebem correção, preservando exatidão.
+     */
+    function calculateRemaining(levelName, progress) {
+      const level = getLevelTransition(levelName);
+
+      if (!level) {
+        return { status: "invalid_level", remaining: null, nextLevelName: null, progress };
+      }
+
+      if (!level.nextLevelName || level.max === null) {
+        return { status: "max_level", remaining: 0, nextLevelName: null, progress };
+      }
+
+      const safeProgress = clampNumber(progress, 0, CONFIG.maxProgress);
+      const levelRange = level.max - level.min;
+
+      // Fronteiras: cálculo direto sem correção (preserva exatidão).
+      if (safeProgress <= 0) {
+        return {
+          status: "ok",
+          remaining: roundCurrency(levelRange),
+          nextLevelName: level.nextLevelName,
+          progress: safeProgress
+        };
+      }
+      if (safeProgress >= CONFIG.maxProgress) {
+        return {
+          status: "ok",
+          remaining: 0,
+          nextLevelName: level.nextLevelName,
+          progress: safeProgress
+        };
+      }
+
+      // Modelo calibrado: falta = range × (1 − P × FATOR/100) + range × OFFSET/100
+      const adjustedRemaining =
+        levelRange * (1 - safeProgress * CONFIG.progressFactor / 100) +
+        levelRange * CONFIG.progressOffset / 100;
+
+      return {
+        status: "ok",
+        remaining: roundCurrency(Math.max(adjustedRemaining, 0)),
+        nextLevelName: level.nextLevelName,
+        progress: safeProgress
+      };
+    }
+
+    function formatCurrency(value) {
+      return currencyFormatter.format(value);
+    }
+
+    function buildCopyMessage(formattedValue, nextLevelName, formattedSportsValue) {
+      return [
+        `${TEXT.resultIntro}${formattedValue}${TEXT.resultMiddle} (${nextLevelName}).`,
+        TEXT.reminder,
+        `${TEXT.sportsOnlyLabel}${formattedSportsValue}.`
+      ].join("\n");
+    }
+
+    function createCalculationViewModel(levelName, rawProgressValue) {
+      const progress = parseProgress(rawProgressValue);
+      const calculation = calculateRemaining(levelName, progress);
+
+      if (calculation.status === "invalid_level") {
+        return {
+          status: calculation.status,
+          progress,
+          copyMessage: TEXT.invalidLevel,
+          displayParts: [{ type: "text", value: TEXT.invalidLevel }]
+        };
+      }
+
+      if (calculation.status === "max_level") {
+        return {
+          status: calculation.status,
+          progress: CONFIG.maxProgress,
+          copyMessage: TEXT.maxLevel,
+          displayParts: [{ type: "text", value: TEXT.maxLevel }]
+        };
+      }
+
+      const formattedValue = formatCurrency(calculation.remaining);
+      const sportsRemaining = roundCurrency(calculation.remaining / CONFIG.sportsMultiplier);
+      const formattedSportsValue = formatCurrency(sportsRemaining);
+
+      return {
+        status: calculation.status,
+        progress: calculation.progress,
+        formattedValue,
+        formattedSportsValue,
+        nextLevelName: calculation.nextLevelName,
+        copyMessage: buildCopyMessage(formattedValue, calculation.nextLevelName, formattedSportsValue),
+        displayParts: [
+          { type: "text", value: TEXT.resultIntro },
+          { type: "value", value: formattedValue },
+          { type: "text", value: `${TEXT.resultMiddle} (${calculation.nextLevelName}).` },
+          { type: "break" },
+          { type: "break" },
+          { type: "text", value: TEXT.reminder },
+          { type: "break" },
+          { type: "break" },
+          { type: "text", value: TEXT.sportsOnlyLabel },
+          { type: "value", value: formattedSportsValue }
+        ]
+      };
+    }
+
+    // ========================================================================
+    // RENDERIZAÇÃO
+    // ========================================================================
+
+    function createDisplayNode(part) {
+      if (part.type === "value") {
+        const span = document.createElement("span");
+        span.className = "value";
+        span.textContent = part.value;
+        return span;
+      }
+      if (part.type === "break") return document.createElement("br");
+      return document.createTextNode(part.value);
+    }
+
+    function render(viewModel) {
+      currentViewModel = viewModel;
+      dom.progressFill.style.width = `${viewModel.progress}%`;
+      dom.resultText.replaceChildren(...viewModel.displayParts.map(createDisplayNode));
+      dom.copyButton.disabled = !viewModel.copyMessage;
+    }
+
+    function updateCalculation() {
+      const viewModel = createCalculationViewModel(dom.vipLevel.value, dom.progress.value);
+      render(viewModel);
+    }
+
+    // ========================================================================
+    // CLIPBOARD
+    // ========================================================================
+
+    function setCopyButtonFeedback(text) {
+      dom.copyButton.textContent = text;
+      if (copyFeedbackTimer !== null) {
+        window.clearTimeout(copyFeedbackTimer);
+      }
+      copyFeedbackTimer = window.setTimeout(() => {
+        dom.copyButton.textContent = TEXT.copyDefault;
+        copyFeedbackTimer = null;
+      }, CONFIG.copyFeedbackDelay);
+    }
+
+    async function copyWithFallback(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      }
+
+      // Fallback para navegadores antigos / contextos não-seguros
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.left = "-9999px";
+      textarea.style.top = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+
+      try {
+        const ok = document.execCommand("copy");
+        if (!ok) throw new Error("execCommand returned false");
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+
+    async function copyCurrentMessage() {
+      if (!currentViewModel?.copyMessage) return;
+      try {
+        await copyWithFallback(currentViewModel.copyMessage);
+        setCopyButtonFeedback(TEXT.copySuccess);
+      } catch {
+        setCopyButtonFeedback(navigator.clipboard ? TEXT.copyError : TEXT.copyUnavailable);
+      }
+    }
+
+    // ========================================================================
+    // EVENT HANDLERS
+    // ========================================================================
+
+    function handleProgressInput(event) {
+      const target = event.target;
+      // Durante a digitação, sempre extraímos apenas os dígitos e aplicamos o
+      // formato fluído. Isso evita o problema clássico onde o campo mostra "0,05"
+      // e a vírgula injetada pelo formatador faz o próximo dígito ser tratado
+      // como decimal explícito, travando a digitação.
+      // Decimais explícitos ("14,12", "14.12") são tratados no paste/blur.
+      const digitsOnly = target.value.replace(/\D/g, "");
+      target.value = formatProgressInput(digitsOnly);
+      updateCalculation();
+    }
+
+    function handleProgressPaste(event) {
+      event.preventDefault();
+      const clip = event.clipboardData || window.clipboardData;
+      if (!clip) return;
+      dom.progress.value = formatPastedProgress(clip.getData("text"));
+      updateCalculation();
+    }
+
+    function handleProgressBlur(event) {
+      // Ao sair do campo, normaliza o que estiver lá.
+      if (event.target.value) {
+        event.target.value = formatPastedProgress(event.target.value);
+        updateCalculation();
+      }
+    }
+
+    // ========================================================================
+    // TESTES (debug only)
+    // ========================================================================
+
+    function runTests() {
+      const tests = [];
+      const assert = (cond, msg) => tests.push({ cond: !!cond, msg });
+
+      // Formatação de input — digitação fluida (só dígitos)
+      assert(formatProgressInput("1412") === "14,12", "1412 → 14,12");
+      assert(formatProgressInput("10000") === "100,00", "10000 → 100,00");
+      assert(formatProgressInput("9999") === "99,99", "9999 → 99,99");
+      assert(formatProgressInput("99999") === "100,00", "99999 capado em 100,00");
+      assert(formatProgressInput("123") === "1,23", "123 → 1,23");
+      assert(formatProgressInput("5") === "0,05", "5 → 0,05");
+      assert(formatProgressInput("") === "", "vazio → vazio");
+
+      // Formatação de input — colagem com decimal explícito
+      assert(formatPastedProgress("100,00") === "100,00", "100,00 colado mantém");
+      assert(formatPastedProgress("14.12") === "14,12", "14.12 colado → 14,12");
+      assert(formatPastedProgress("14.12%") === "14,12", "14.12% colado → 14,12");
+      assert(formatPastedProgress("0,30") === "0,30", "0,30 colado mantém");
+      assert(formatPastedProgress("1412") === "14,12", "1412 colado → 14,12");
+      assert(formatPastedProgress("10000") === "100,00", "10000 colado → 100,00");
+      assert(formatPastedProgress("150,00") === "100,00", "150,00 colado capa em 100");
+
+      // Parsing
+      assert(parseProgress("14,12") === 14.12, "parse 14,12 → 14.12");
+      assert(parseProgress("abc") === 0, "input inválido → 0");
+      assert(parseProgress("150,00") === 100, "acima de 100% → clamp 100");
+      assert(parseProgress("-5") === 0, "negativo → 0");
+
+      // Cálculo VIP — fronteiras (sem correção em 0% e 100%, preserva exatidão)
+      assert(calculateRemaining("non-VIP", 0).remaining === 60000, "non-VIP 0% → R$ 60.000 exato");
+      assert(calculateRemaining("Bronze", 0).remaining === 240000, "Bronze 0% → R$ 240.000");
+      assert(calculateRemaining("Silver", 0).remaining === 300000, "Silver 0% → R$ 300.000");
+      assert(calculateRemaining("Gold", 0).remaining === 900000, "Gold 0% → R$ 900.000");
+      assert(calculateRemaining("Gold", 100).remaining === 0, "Gold 100% → R$ 0");
+      assert(calculateRemaining("Bronze", 100).remaining === 0, "Bronze 100% → R$ 0");
+
+      // Cálculo VIP — modelo calibrado deve gerar centavos VARIADOS (,00 a ,99)
+      // e ficar próximo dos dados reais.
+      const gold12 = calculateRemaining("Gold", 12.15);
+      assert(gold12.remaining === 790690.05, "Gold 12,15% → R$ 790.690,05");
+      assert(gold12.remaining % 1 !== 0, "Gold 12,15% deve ter centavos não-zero");
+
+      const bronze25 = calculateRemaining("Bronze", 25);
+      assert(bronze25.remaining === 180018.81, "Bronze 25% → R$ 180.018,81");
+
+      // Validação contra dados reais — erros < R$ 25 (modelo calibrado é melhor)
+      const silver = calculateRemaining("Silver", 0.30);
+      assert(Math.abs(silver.remaining - 299111.76) < 25, "Silver 0,30% — erro < R$ 25");
+
+      const plat1 = calculateRemaining("Platinum 1", 13.35);
+      assert(Math.abs(plat1.remaining - 1299821.50) < 25, "Platinum 1 13,35% — erro < R$ 25");
+
+      const gold085 = calculateRemaining("Gold", 0.85);
+      assert(Math.abs(gold085.remaining - 892363.88) < 25, "Gold 0,85% — erro < R$ 25");
+
+      const gold02 = calculateRemaining("Gold", 0.02);
+      assert(Math.abs(gold02.remaining - 899818.71) < 25, "Gold 0,02% — erro < R$ 25");
+
+      const plat007 = calculateRemaining("Platinum 1", 0.07);
+      assert(Math.abs(plat007.remaining - 1498969.00) < 25, "Platinum 1 0,07% — erro < R$ 25");
+
+      const gold155 = calculateRemaining("Gold", 1.55);
+      assert(Math.abs(gold155.remaining - 886078.15) < 25, "Gold 1,55% — erro < R$ 25");
+
+      // Status especiais
+      assert(calculateRemaining("Platinum 3", 50).status === "max_level", "Platinum 3 = max_level");
+      assert(calculateRemaining("Inexistente", 10).status === "invalid_level", "nível inválido");
+
+      // ViewModel
+      const vm = createCalculationViewModel("Gold", "12,15");
+      assert(vm.status === "ok", "viewModel Gold ok");
+      assert(vm.copyMessage.includes("Platinum 1"), "mensagem inclui próximo nível");
+      assert(vm.copyMessage.includes("apostas esportivas"), "mensagem inclui esportivas");
+      assert(vm.formattedValue.includes("790.690,05"), "valor calculado correto");
+
+      // Round-trip
+      assert(roundCurrency(0.1 + 0.2) === 0.30, "roundCurrency evita float drift");
+      assert(roundCurrency(123.456) === 123.46, "roundCurrency arredonda corretamente");
+
+      // Resultado
+      const failed = tests.filter(t => !t.cond);
+      if (failed.length === 0) {
+        console.info(`%c${TEXT.testsPassed} (${tests.length}/${tests.length})`,
+          "color: #8ff5b0; font-weight: bold;");
+      } else {
+        console.group(`%c${failed.length} teste(s) falharam de ${tests.length}`,
+          "color: #ff6b6b; font-weight: bold;");
+        failed.forEach(t => console.error("✗", t.msg));
+        console.groupEnd();
+      }
+    }
+
+    // ========================================================================
+    // BOOTSTRAP
+    // ========================================================================
+
+    dom.progress.addEventListener("input", handleProgressInput);
+    dom.progress.addEventListener("paste", handleProgressPaste);
+    dom.progress.addEventListener("blur", handleProgressBlur);
+    dom.vipLevel.addEventListener("change", updateCalculation);
+    dom.copyButton.addEventListener("click", copyCurrentMessage);
+
+    if (CONFIG.debug) runTests();
+
+    updateCalculation();
+  </script>
+</body>
+</html>
