@@ -270,9 +270,18 @@
             <option value="Bronze">Bronze</option>
             <option value="Silver">Silver</option>
             <option value="Gold">Gold</option>
-            <option value="Platinum 1">Platinum 1</option>
-            <option value="Platinum 2">Platinum 2</option>
-            <option value="Platinum 3">Platinum 3</option>
+            <option value="Platinum I">Platinum I</option>
+            <option value="Platinum II">Platinum II</option>
+            <option value="Platinum III">Platinum III</option>
+            <option value="Platina IV">Platina IV</option>
+            <option value="Platina V">Platina V</option>
+            <option value="Platina VI">Platina VI</option>
+            <option value="Diamante">Diamante</option>
+            <option value="Diamante II">Diamante II</option>
+            <option value="Diamante III">Diamante III</option>
+            <option value="Diamante IV">Diamante IV</option>
+            <option value="Diamante V">Diamante V</option>
+            <option value="Obsidiana">Obsidiana</option>
           </select>
         </div>
 
@@ -342,14 +351,35 @@
      * O "fator mágico" 0.99963209 da versão anterior foi removido por introduzir
      * erro sistemático (até R$ 130 em casos como Gold 12,15%).
      */
+    /**
+     * Tabela de níveis VIP.
+     * Cada faixa representa o VOLUME TOTAL apostado desde a criação da conta
+     * para se atingir aquele nível. O range do nível atual é (max - min).
+     *
+     * Fórmula de progresso da plataforma:
+     *   progresso_real(%) = (apostado_no_nivel / range_do_nivel) * 100
+     *   progresso_exibido = arredondamento(progresso_real, 2 casas)
+     *
+     * Para o cálculo de quanto falta, ver `calculateRemaining` — usa modelo
+     * calibrado de 2 parâmetros (fator + offset) contra dados reais.
+     */
     const LEVELS = Object.freeze([
-      { name: "non-VIP",    min: 0,       max: 60000,   nextLevelName: "Bronze"     },
-      { name: "Bronze",     min: 60000,   max: 300000,  nextLevelName: "Silver"     },
-      { name: "Silver",     min: 300000,  max: 600000,  nextLevelName: "Gold"       },
-      { name: "Gold",       min: 600000,  max: 1500000, nextLevelName: "Platinum 1" },
-      { name: "Platinum 1", min: 1500000, max: 3000000, nextLevelName: "Platinum 2" },
-      { name: "Platinum 2", min: 3000000, max: 6000000, nextLevelName: "Platinum 3" },
-      { name: "Platinum 3", min: 6000000, max: null,    nextLevelName: null         }
+      { name: "non-VIP",      min: 0,             max: 60_000,         nextLevelName: "Bronze"       },
+      { name: "Bronze",       min: 60_000,        max: 300_000,        nextLevelName: "Silver"       },
+      { name: "Silver",       min: 300_000,       max: 600_000,        nextLevelName: "Gold"         },
+      { name: "Gold",         min: 600_000,       max: 1_500_000,      nextLevelName: "Platinum I"   },
+      { name: "Platinum I",   min: 1_500_000,     max: 3_000_000,      nextLevelName: "Platinum II"  },
+      { name: "Platinum II",  min: 3_000_000,     max: 6_000_000,      nextLevelName: "Platinum III" },
+      { name: "Platinum III", min: 6_000_000,     max: 15_000_000,     nextLevelName: "Platina IV"   },
+      { name: "Platina IV",   min: 15_000_000,    max: 32_500_000,     nextLevelName: "Platina V"    },
+      { name: "Platina V",    min: 32_500_000,    max: 60_000_000,     nextLevelName: "Platina VI"   },
+      { name: "Platina VI",   min: 60_000_000,    max: 150_000_000,    nextLevelName: "Diamante"     },
+      { name: "Diamante",     min: 150_000_000,   max: 300_000_000,    nextLevelName: "Diamante II"  },
+      { name: "Diamante II",  min: 300_000_000,   max: 600_000_000,    nextLevelName: "Diamante III" },
+      { name: "Diamante III", min: 600_000_000,   max: 1_500_000_000,  nextLevelName: "Diamante IV"  },
+      { name: "Diamante IV",  min: 1_500_000_000, max: 3_000_000_000,  nextLevelName: "Diamante V"   },
+      { name: "Diamante V",   min: 3_000_000_000, max: 6_000_000_000,  nextLevelName: "Obsidiana"    },
+      { name: "Obsidiana",    min: 6_000_000_000, max: null,           nextLevelName: null           }
     ]);
 
     const LEVEL_MAP = new Map(LEVELS.map((level) => [level.name, level]));
@@ -479,7 +509,7 @@
      *      menor que o exibido em termos relativos.
      *    - Viés aditivo (OFFSET ≈ +0,00125%): correção residual.
      * 3. Os parâmetros foram calibrados por mínimos quadrados absolutos contra
-     *    6 pontos de dados reais cobrindo Silver/Gold/Platinum 1.
+     *    6 pontos de dados reais cobrindo Silver/Gold/Platinum I.
      *
      * Resultados de validação:
      *   - Erro absoluto médio: R$ 5,70 (vs R$ 15,80 do modelo simples)
@@ -753,8 +783,8 @@
       const silver = calculateRemaining("Silver", 0.30);
       assert(Math.abs(silver.remaining - 299111.76) < 25, "Silver 0,30% — erro < R$ 25");
 
-      const plat1 = calculateRemaining("Platinum 1", 13.35);
-      assert(Math.abs(plat1.remaining - 1299821.50) < 25, "Platinum 1 13,35% — erro < R$ 25");
+      const plat1 = calculateRemaining("Platinum I", 13.35);
+      assert(Math.abs(plat1.remaining - 1299821.50) < 25, "Platinum I 13,35% — erro < R$ 25");
 
       const gold085 = calculateRemaining("Gold", 0.85);
       assert(Math.abs(gold085.remaining - 892363.88) < 25, "Gold 0,85% — erro < R$ 25");
@@ -762,20 +792,42 @@
       const gold02 = calculateRemaining("Gold", 0.02);
       assert(Math.abs(gold02.remaining - 899818.71) < 25, "Gold 0,02% — erro < R$ 25");
 
-      const plat007 = calculateRemaining("Platinum 1", 0.07);
-      assert(Math.abs(plat007.remaining - 1498969.00) < 25, "Platinum 1 0,07% — erro < R$ 25");
+      const plat007 = calculateRemaining("Platinum I", 0.07);
+      assert(Math.abs(plat007.remaining - 1498969.00) < 25, "Platinum I 0,07% — erro < R$ 25");
 
       const gold155 = calculateRemaining("Gold", 1.55);
       assert(Math.abs(gold155.remaining - 886078.15) < 25, "Gold 1,55% — erro < R$ 25");
 
       // Status especiais
-      assert(calculateRemaining("Platinum 3", 50).status === "max_level", "Platinum 3 = max_level");
+      assert(calculateRemaining("Obsidiana", 50).status === "max_level", "Obsidiana = max_level (nível final)");
+      assert(calculateRemaining("Platinum III", 50).status === "ok", "Platinum III não é mais max_level (aponta para Platina IV)");
       assert(calculateRemaining("Inexistente", 10).status === "invalid_level", "nível inválido");
+
+      // Novos níveis — fronteiras 0% (deve retornar range exato)
+      assert(calculateRemaining("Platinum III", 0).remaining === 9000000, "Platinum III 0% → range R$ 9.000.000");
+      assert(calculateRemaining("Platina IV", 0).remaining === 17500000, "Platina IV 0% → range R$ 17.500.000");
+      assert(calculateRemaining("Platina V", 0).remaining === 27500000, "Platina V 0% → range R$ 27.500.000");
+      assert(calculateRemaining("Platina VI", 0).remaining === 90000000, "Platina VI 0% → range R$ 90.000.000");
+      assert(calculateRemaining("Diamante", 0).remaining === 150000000, "Diamante 0% → range R$ 150.000.000");
+      assert(calculateRemaining("Diamante II", 0).remaining === 300000000, "Diamante II 0% → range R$ 300.000.000");
+      assert(calculateRemaining("Diamante III", 0).remaining === 900000000, "Diamante III 0% → range R$ 900.000.000");
+      assert(calculateRemaining("Diamante IV", 0).remaining === 1500000000, "Diamante IV 0% → range R$ 1.500.000.000");
+      assert(calculateRemaining("Diamante V", 0).remaining === 3000000000, "Diamante V 0% → range R$ 3.000.000.000");
+
+      // Novos níveis — 100% deve dar zero
+      assert(calculateRemaining("Diamante", 100).remaining === 0, "Diamante 100% → R$ 0");
+      assert(calculateRemaining("Diamante V", 100).remaining === 0, "Diamante V 100% → R$ 0");
+
+      // Novos níveis — valor intermediário deve gerar centavos variados
+      const diamante50 = calculateRemaining("Diamante", 50);
+      assert(diamante50.status === "ok", "Diamante 50% calcula ok");
+      assert(diamante50.remaining > 0 && diamante50.remaining < 150000000, "Diamante 50% no range esperado");
+      assert(diamante50.nextLevelName === "Diamante II", "Diamante 50% → próximo é Diamante II");
 
       // ViewModel
       const vm = createCalculationViewModel("Gold", "12,15");
       assert(vm.status === "ok", "viewModel Gold ok");
-      assert(vm.copyMessage.includes("Platinum 1"), "mensagem inclui próximo nível");
+      assert(vm.copyMessage.includes("Platinum I"), "mensagem inclui próximo nível");
       assert(vm.copyMessage.includes("apostas esportivas"), "mensagem inclui esportivas");
       assert(vm.formattedValue.includes("790.690,05"), "valor calculado correto");
 
